@@ -44,6 +44,17 @@ This is the core development phase where we build our new, custom service.
     *   Connect this module to the `/authorize` endpoint. The OIDC flow should now only succeed if the Aduna API returns a `true` result.
     *   **Goal:** The OIDC provider can now perform real age verification via the MNO.
 
+### Vonage Code Added to the Blueprint
+
+Rather than building a fully separate OIDC provider service, the Vonage authentication logic was integrated directly into the EU Blueprint issuer. The following files were added or modified:
+
+| File | Change |
+|------|--------|
+| `av-srv-web-issuing-avw-py/app/authn/vonage_oidc_auth.py` | **New file.** Custom `VonageOidcAuth` class extending `PidIssuerAuth`. Intercepts the authorization flow and redirects the user to the `/phone_form` endpoint instead of the default EU login page. |
+| `av-srv-web-issuing-avw-py/app/camara_client.py` | **New file.** `CamaraClient` class that wraps the Vonage/Aduna CAMARA `Verify Age` API. Currently contains a stub returning `True`; to be replaced with the real API call. |
+| `av-srv-web-issuing-avw-py/app/route_oidc.py` | **Modified.** Added `/phone_form` (GET) and `/verify_phone` (POST) routes. `/verify_phone` calls `CamaraClient.verify_age()`, then completes the OIDC authorization session and issues the authorization code. Also fixed `authorizationv2()` to redirect the browser directly to `/authorization` (rather than making an internal server-side HTTP call), and patched `redirect_uris` into the client CDB entry after `process_request_authorization()`. Added a null-guard in the `/token` endpoint for missing session IDs. |
+| `register_client.py` | **New file** (project root). A one-shot script to register `my-awesome-client` with `redirect_uri=https://client.example.com/cb` against the local issuer's `/registration` endpoint. |
+
 ---
 
 ## Phase 3: Integration and Configuration

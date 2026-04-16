@@ -81,7 +81,7 @@ CONFIG = {
       "authentication": {
         "user": {
           "acr": "urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocolPassword",
-          "class": "idpyoidc.server.user_authn.user.PidIssuerAuth",
+          "class": "app.authn.vonage_oidc_auth.VonageOidcAuth",
           "kwargs": {
             "user": "diana"
           }

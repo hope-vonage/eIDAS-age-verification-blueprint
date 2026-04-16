@@ -340,11 +340,15 @@ def authorizationv2(
     state=None,
 ):
 
-    client_secret = str(uuid.uuid4())
-
     current_app.server.get_endpoint("registration").process_request_authorization(
-        client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri
+        client_id=client_id, redirect_uri=redirect_uri
     )
+
+    # Ensure the redirect_uri is stored in the client DB entry so the
+    # authorization endpoint accepts it (process_request_authorization ignores it)
+    _context = current_app.server.get_context()
+    if client_id in _context.cdb:
+        _context.cdb[client_id]["redirect_uris"] = [(redirect_uri, {})]
 
     # return service_endpoint(current_app.server.get_endpoint("authorization"))
     url = (
@@ -369,35 +373,6 @@ def authorizationv2(
     if state:
         url = f"{url}&state={state}"
 
-    payload = {}
-    headers = {}
-    response = requests.request("GET", url, headers=headers, data=payload)
-
-    if response.status_code != 200:
-        cfgservice.app_logger.error("Authorization endpoint invalid request")
-        return auth_error_redirect(redirect_uri, "invalid_request")
-
-    response = response.json()
-
-    args = {}
-    if "authorization_details" in response:
-        args.update({"authorization_details": response["authorization_details"]})
-    if "scope" in response:
-        args.update({"scope": response["scope"]})
-    if not args:
-        cfgservice.app_logger.error("Authorization args not found")
-        return authentication_error_redirect(
-            jws_token=response["token"],
-            error=response["error"],
-            error_description=response["error_description"],
-        )
-
-    params = {"token": response["token"]}
-
-    params.update(args)
-
-    session["authorization_params"] = params
-
     session_id = str(uuid.uuid4())
     session_ids.update(
         {session_id: {"expires": datetime.now() + timedelta(minutes=60)}}
@@ -421,7 +396,9 @@ def authorizationv2(
         )
     )
 
-    return redirect(response["url"])
+    # Redirect the browser directly to the /authorization endpoint so that
+    # VonageOidcAuth can redirect the user to the phone form.
+    return redirect(url)
 
 
 @oidc.route("/authorizationV3", methods=["GET"])
@@ -652,6 +629,10 @@ def token():
     if req_args["grant_type"] == "authorization_code":
 
         session_id = getSessionId_authCode(req_args["code"])
+
+        if session_id is None:
+            cfgservice.app_logger.error("Token request: session not found for code (expired or server restarted)")
+            return make_response(jsonify({"error": "invalid_grant", "error_description": "authorization code expired or not found"}), 400)
 
         cfgservice.app_logger.info(
             ", Session ID: "
@@ -1438,3 +1419,87 @@ def service_endpoint(endpoint):
 @oidc.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):
     return "bad request!", 400
+
+
+from idpyoidc.server.user_authn.user import PidIssuerAuth
+from .camara_client import CamaraClient
+
+
+@oidc.route("/phone_form", methods=["GET"])
+def phone_form():
+    jws_token = request.args.get("jws_token")
+    form = f"""
+<form action="/verify_phone" method="post">
+  <input type="hidden" name="jws_token" value="{jws_token}">
+  <label for="phone">Phone Number:</label><br>
+  <input type="text" id="phone" name="phone"><br>
+  <input type="submit" value="Verify">
+</form>
+"""
+    return form
+
+
+@oidc.route("/verify_phone", methods=["POST"])
+def verify_phone():
+    phone_number = request.form.get("phone")
+    jws_token = request.form.get("jws_token")
+
+    camara_client = CamaraClient(api_key="your_api_key", api_secret="your_api_secret")
+    age_verified = camara_client.verify_age(phone_number, 18)
+
+    if not age_verified:
+        return "Age verification failed", 403
+
+    # Retrieve the authn method — same pattern as verify_user()
+    authn_method = current_app.server.get_context().authn_broker.get_method_by_id("user")
+
+    # Unpack token to recover the original authz request — exactly like verify()
+    auth_args = authn_method.unpack_token(jws_token)
+    authz_request = AuthorizationRequest().from_urlencoded(auth_args["query"])
+
+    endpoint = current_app.server.get_endpoint("authorization")
+
+    _session_id = endpoint.create_session(
+        authz_request,
+        phone_number,
+        auth_args["authn_class_ref"],
+        auth_args["iat"],
+        authn_method,
+    )
+
+    # Store the age verification claims in the UserInfo db so the credential
+    # endpoint can retrieve them when the wallet requests the credential
+    userinfo_db = current_app.server.get_context().userinfo.db
+    userinfo_db[phone_number] = {
+        "sub": phone_number,
+        "age_over_18": True,
+        "phone_number": phone_number,
+    }
+
+    args = endpoint.authz_part2(request=authz_request, session_id=_session_id)
+
+    if isinstance(args, ResponseMessage) and "error" in args:
+        return make_response(args.to_json(), 400)
+
+    # Store the auth code in session_ids so the token endpoint can look it up
+    current_session_id = session.get("session_id")
+    if current_session_id and current_session_id in session_ids:
+        session_ids[current_session_id]["auth_code"] = args["response_args"]["code"]
+        cfgservice.app_logger.info(
+            ", Session ID: " + current_session_id
+            + ", Authorization Response, Code: " + args["response_args"]["code"]
+        )
+    else:
+        # No existing session_id — create one and store it
+        new_session_id = str(uuid.uuid4())
+        session_ids[new_session_id] = {
+            "expires": datetime.now() + timedelta(minutes=60),
+            "auth_code": args["response_args"]["code"],
+        }
+        session["session_id"] = new_session_id
+        cfgservice.app_logger.info(
+            ", Session ID: " + new_session_id
+            + ", Authorization Response (new session), Code: " + args["response_args"]["code"]
+        )
+
+    return do_response(endpoint, request, **args)

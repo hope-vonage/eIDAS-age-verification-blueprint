@@ -60,17 +60,87 @@ For presenting the proof of age, the user's app will generate a **Zero-Knowledge
 *   **Data Minimization:** The use of ZKPs ensures that only the necessary information (i.e., the truth of the age claim) is shared with the verifier.
 *   **Secure Communication:** All communication between components must be secured using TLS.
 
-## 6. Compliance
+## 6. Quickstart
 
-This specification is designed to be compliant with the European Digital Identity Wallet architecture.
+This section walks through the complete local end-to-end flow: from registering a client to receiving a signed access token and ID token.
 
-*   **Protocols:** The use of **OIDC**, **OID4VCI**, and **OID4VP** aligns with the core standards.
-*   **Attestation Format:** The **`mso_mdoc`** format is used, as required.
-*   **Proof Type:** Proofs will be in **JWT** format.
-*   **PKCE:** Proof Key for Code Exchange (PKCE) will be used for enhanced security in the OIDC authorization flow.
+### Prerequisites
 
-## 7. Codebase Mapping
+*   Python 3.9/3.10 with the project virtualenv set up (see `av-srv-web-issuing-avw-py/install.md`).
 
-*   **`Issuer Service (EU Blueprint)`:** This corresponds to the application in the **`av-srv-web-issuing-avw-py/`** directory. This service will be configured, but its core logic will not be significantly modified.
-*   **`Signing Engine (QEAA Seal)`:** This is a logical component within the `Issuer Service`. It is not a separate service but refers to the part of the blueprint that must be configured with Vonage's production QTSP certificates and private keys.
-*   **`Vonage Identity Provider (OIDC)`:** This is a **new service** that must be designed and built. It will contain the custom logic for interacting with the Aduna Hub and MNOs.
+### Step 1 — Start the issuer service
+
+From the `av-srv-web-issuing-avw-py` directory:
+
+```bash
+source .venv/bin/activate
+SERVICE_URL="http://127.0.0.1:5000/" flask --app app run
+```
+
+The `SERVICE_URL` environment variable must be set to the local address so that internal redirects resolve correctly.
+
+### Step 2 — Register a client
+
+From the project root (in a separate terminal):
+
+```bash
+python3 register_client.py
+```
+
+This registers `my-awesome-client` with `redirect_uri=https://client.example.com/cb`. A successful response returns a `client_id`, `client_secret`, and registration metadata (HTTP 201).
+
+### Step 3 — Start the authorization flow
+
+Open the following URL in a browser:
+
+```
+http://127.0.0.1:5000/authorizationV3?response_type=code&client_id=my-awesome-client&redirect_uri=https://client.example.com/cb&scope=openid
+```
+
+The server registers the client dynamically, then redirects the browser through `/authorization` → `/phone_form`.
+
+### Step 4 — Enter a phone number
+
+The phone form page asks for a phone number. Enter any value and click **Verify**. The `CamaraClient` calls the CAMARA `Verify Age` stub (always returns `true` in local/dev mode). On success the server completes the OIDC session and issues an authorization code.
+
+### Step 5 — Capture the authorization code
+
+The browser is redirected to:
+
+```
+https://client.example.com/cb?scope=openid&code=<AUTH_CODE>&iss=https%3A%2F%2F127.0.0.1%3A5000&client_id=my-awesome-client
+```
+
+Copy the value of the `code` parameter from the address bar.
+
+### Step 6 — Exchange the code for tokens
+
+```bash
+curl -s -X POST http://127.0.0.1:5000/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "grant_type=authorization_code" \
+  --data-urlencode "code=<AUTH_CODE>" \
+  --data-urlencode "redirect_uri=https://client.example.com/cb" \
+  --data-urlencode "client_id=my-awesome-client"
+```
+
+A successful response (HTTP 200) returns:
+
+```json
+{
+  "token_type": "Bearer",
+  "scope": "openid",
+  "access_token": "<JWT>",
+  "expires_in": 3600,
+  "refresh_token": "<OPAQUE_TOKEN>",
+  "id_token": "<JWT>"
+}
+```
+
+*   The `access_token` is a signed ES256 JWT issued by the local server.
+*   The `id_token` is a signed RS256 JWT containing the `sub`, `iss`, `aud`, `iat`, `exp`, and `acr` claims.
+*   Both tokens have a 1-hour lifetime.
+
+
+
+
