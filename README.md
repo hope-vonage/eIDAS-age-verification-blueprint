@@ -36,15 +36,20 @@ The system comprises the following key actors and components:
 
 The core of this architecture is the separation of authentication from issuance.
 
-1.  When the `Issuer Service` receives a credential request, it will redirect the user's Wallet to the **`Vonage Identity Provider`** for authentication, following the standard OpenID Connect (OIDC) protocol.
-2.  The `Vonage Identity Provider` will handle the age verification by querying the **Aduna Global Hub** using the CAMARA API.
-3.  Upon successful verification, the `Vonage Identity Provider` will issue a standard OIDC **`ID Token`** back to the Wallet.
+1.  When the `Issuer Service` receives a credential request, it redirects the user's Wallet to the **`Vonage Identity Provider`** for authentication, following the standard OIDC authorization code flow.
+2.  The `Vonage Identity Provider` collects the user's phone number and verifies their age via the **Aduna Global Hub** using the CAMARA API.
+3.  Upon successful verification, the issuer creates an **OIDC session** and issues an **authorization code** to the Wallet.
+
+> **Purpose of the OIDC session:** The session acts as scaffolding for the token exchange. It carries the original authorization request parameters (client ID, redirect URI, scope, PKCE challenge) through the phone form interaction, binds the verified user identity (phone number) to the `sub` claim in the resulting tokens, and issues the short-lived authorization code the Wallet exchanges for tokens. Once the token exchange is complete the session has served its purpose.
+
+4.  The Wallet exchanges the authorization code for an `access_token` (ES256 JWT), `id_token` (RS256 JWT), and `refresh_token` at the `/token` endpoint.
+5.  The `access_token` is then used by the Wallet to call the `/credential` endpoint and retrieve the signed `mso_mdoc` attestation — this is the credential of lasting value.
 
 ### 4.2. Credential Issuance (OID4VCI)
 
-1.  The Wallet will present the `ID Token` to the `Issuer Service` as proof of a successful authentication event.
-2.  The `Issuer Service`, trusting the `ID Token`, will proceed with creating the age attestation.
-3.  The issuance process itself will follow the **OpenID for Verifiable Credential Issuance (OID4VCI)** standard.
+1.  The Wallet presents the `access_token` to the `Issuer Service` `/credential` endpoint.
+2.  The `Issuer Service` creates the age claim (`over_18: true`) and requests the Signing Engine to seal it.
+3.  The signed `mso_mdoc` credential is returned to the Wallet. The issuance process follows the **OpenID for Verifiable Credential Issuance (OID4VCI)** standard.
 
 ### 4.3. Attestation Format
 

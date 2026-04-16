@@ -50,7 +50,7 @@ sequenceDiagram
     Iss->>Wallet: 13. OID4VCI: Issue Credential
     
     Note over Wallet, Ver: [OID4VP Protocol] - Proof Presentation Flow
-    Wallet->>Ver: 14. Present ZKP (I am 18+)
+    Wallet->>Ver: 14. Present mso_mdoc (age_over_18: true)
     Ver->>Ver: 15. Verify Vonage's Signature
 ```
 
@@ -76,10 +76,10 @@ sequenceDiagram
 6.  **Query MNO:** Aduna routes the request to the correct MNO.
 7.  **Get KYC Data:** The MNO checks its KYC records and confirms the user is over the required age threshold.
 8.  **Return Verification Result:** The result is passed back to the `Vonage Identity Provider`.
-9.  **Issue ID Token (OIDC):** With the age successfully verified, the `Vonage Identity Provider` issues a standard OIDC `ID Token` back to the Wallet. This token confirms that the user has been successfully authenticated.
-10. **Present ID Token (OID4VCI):** The Wallet presents this `ID Token` to the Issuer Service as proof of authentication.
-11. **Request Signature:** The Issuer Service now trusts that the user is authenticated. It creates the age claim (`over_18: true`) and requests the Signing Engine to sign it.
+9.  **Issue Authorization Code (OIDC):** With the age successfully verified, the issuer creates an **OIDC session** and issues an **authorization code** to the Wallet. The session carries the original authorization request parameters and binds the verified phone number as the user identity (`sub`). The Wallet exchanges the code for an `access_token`, `id_token`, and `refresh_token` at the `/token` endpoint. The session's job ends here — it is scaffolding to get the tokens back to the Wallet securely.
+10. **Request Credential (OID4VCI):** The Wallet uses the `access_token` to call the `/credential` endpoint on the Issuer Service.
+11. **Request Signature:** The Issuer Service creates the age claim (`over_18: true`) and requests the Signing Engine to sign it.
 12. **Generate Signed Attestation:** The Signing Engine returns a signed `mso_mdoc` credential.
 13. **Issue Credential (OID4VCI):** The Issuer Service sends the final, signed "Proof of Age" credential to the user's Wallet.
-14. **Present Proof (OID4VP):** At a later time, the user can present a Zero-Knowledge Proof (ZKP) from their credential to a Verifier.
-15. **Verify Signature:** The Verifier checks that the proof is valid and that the original credential was signed by Vonage.
+14. **Present Proof (OID4VP / DC API):** At a later time, the user selectively discloses the `over_18: true` claim from their `mso_mdoc` credential to a Verifier using OID4VP or the DC API. No date of birth is revealed.
+15. **Verify Signature:** The Verifier checks the issuer signature against the AV Trusted List and confirms the age claim is valid.
