@@ -35,8 +35,8 @@ This is the core development phase where we build our new, custom service.
 
 *   **Task 2.2: Implement Mock OIDC Endpoints**
     *   Implement the essential OIDC endpoints (`/authorize`, `/token`, `/jwks.json`, `/.well-known/openid-configuration`).
-    *   At this stage, the service should not perform any real verification. It should simply simulate a successful login and issue a basic, unsigned OIDC `ID Token`.
-    *   **Goal:** A "dummy" OIDC provider that follows the correct protocol flow.
+    *   At this stage, the service should not perform any real verification. It should simulate a successful login and complete the OIDC authorization code flow, issuing an authorization code that the Wallet exchanges for an `access_token` and `id_token` at `/token`.
+    *   **Goal:** A "dummy" OIDC provider that follows the correct protocol flow (auth code → token exchange → credential request).
 
 *   **Task 2.3: Integrate with Aduna/CAMARA API**
     *   Develop a module within the OIDC provider to handle communication with the Aduna Global Hub.
@@ -61,10 +61,10 @@ Rather than building a fully separate OIDC provider service, the Vonage authenti
 
 This phase connects the two main components together.
 
-*   **Task 3.1: Configure Issuer to Trust the OIDC Provider**
-    *   Modify the configuration of the `Issuer Service (EU Blueprint)` to use our new `Vonage Identity Provider` as its sole authentication method.
-    *   This involves pointing the Issuer to our OIDC provider's `/.well-known/openid-configuration` endpoint.
-    *   **Goal:** The blueprint software now redirects all authentication requests to our custom service.
+*   **Task 3.1: Configure Issuer to Trust the OIDC Provider** ✅ *Completed*
+    *   Rather than a separate OIDC provider, the Vonage authentication logic was integrated directly into the EU Blueprint issuer (see `VonageOidcAuth` in Phase 2 table above).
+    *   The `VonageOidcAuth` class is registered as the auth handler in the blueprint config, intercepting all authorization requests and routing them through `/phone_form` → CAMARA age check → auth code issuance.
+    *   **Goal achieved:** The blueprint redirects all authentication requests through the Vonage/CAMARA verification flow.
 
 *   **Task 3.2: Configure Production Signing Keys**
     *   Update the `Issuer Service` configuration to use Vonage's actual QTSP signing keys and certificates instead of the provided test ones. This will likely involve secure key management practices.
@@ -74,13 +74,13 @@ This phase connects the two main components together.
 
 ## Phase 4: End-to-End Testing & Deployment
 
-*   **Task 4.1: Full Flow Testing**
-    *   Perform a complete end-to-end test of the issuance flow, from the user's initial request to receiving a signed credential in a test wallet.
-    *   Test failure cases (e.g., MNO cannot find the user, user is underage, user denies consent).
-    *   **Goal:** A fully tested and robust issuance pipeline.
+*   **Task 4.1: Full Flow Testing** ✅ *Completed (happy path)*
+    *   The end-to-end issuance flow has been validated locally: OID4VCI credential request → OIDC redirect → phone form → CAMARA age check → auth code → token exchange (`access_token`, `id_token`, `refresh_token`) → `/credential` endpoint.
+    *   The CAMARA client (`camara_client.py`) currently uses a stub returning `True`. Testing of failure cases (underage, MNO lookup failure, consent denied) is pending the real CAMARA API integration.
+    *   **Remaining:** Negative-path testing once the real CAMARA API is wired up.
 
 *   **Task 4.2: Containerize and Deploy**
-    *   Ensure both the `Issuer Service` and the `Vonage Identity Provider` have `Dockerfiles`.
-    *   Use Docker Compose or a similar tool to define the multi-service application.
-    *   Deploy to a staging environment.
-    *   **Goal:** A deployable, production-ready application.
+    *   The Vonage authentication logic is integrated into the EU Blueprint issuer, so only a single service needs to be containerized. A `Dockerfile` already exists in `av-srv-web-issuing-avw-py/`.
+    *   Update the `Dockerfile` and any environment configuration to include the new Vonage-specific env vars (`SERVICE_URL`, CAMARA credentials, etc.).
+    *   Deploy to a staging environment and re-run the end-to-end flow against the real CAMARA API.
+    *   **Goal:** A deployable, production-ready application with real age verification.
