@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no" />
+    <meta name="Title" content="Age Verification Form" />
+    <meta name="Keywords" content="Age Verification, Enrolment, Form" />
+    <meta name="Description" content="Age Verification Form for Age Verification Wallet" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}"
+        type="image/vnd.microsoft.icon" />
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.gif') }}" type="image/gif" />
+
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}" />
+    <link href="{{ url_for('static', filename='css/tailwind.css') }}" rel="stylesheet">
+    <script type="text/javascript" id="jqueryId"
+        src="{{ url_for('static', filename='scripts/jquery/jquery-3.6.3.min.js') }}" charset="UTF-8"></script>
+
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/promiz/promiz-1.0.6.js') }}"
+        charset="UTF-8"></script>
+    <!--
+    <script type="text/javascript" src="https://webgate.ec.europa.eu/cas/scripts/sha3/sha3_en_9.7.1.20.1679559965505.js" integrity="sha256-CtgtQUShEl8dHOb+FeLo3tfArvxek4PGiS6UGczk5OY= sha384-DUt2v30t+xTbxAyvcy9BpswNEUrWJT8Fl1P1Fc+ScGgcUzrwtm2idVOj35m6NisW sha512-HrljBBDmVHa8MfWcgNifCVutUrKi/3eutVkadMdDUAP3dcraj6n1u2mx5J+UkkRFwYnEoCpFabG46Jxp8EdDnQ==" charset="UTF-8"></script>
+    <script type="text/javascript" src="https://webgate.ec.europa.eu/cas/scripts/static-validator/static-validator_en_9.7.1.20.1679559965505.js" integrity="sha256-hBVKKp1NO+Jxso6WVWYJzYcEyGudrlIJwUpEDp1Zf5E= sha384-my8RgF2Pk8SwCkcpI3HRVX8PX5QyMv+tlmLwVhekljHUBgLVcNe8PxqjYnn9lhUw sha512-VvLFAJWMDPOVXf6HAWnhROxaXLFB0LZWzeglGtlliYHLLEQzrV3N9ixrCfPg3LOrfxtyifR4xdI9+QL2QxRoKw==" charset="UTF-8"></script>
+-->
+
+    <!--
+    <script type="text/javascript" src="https://webgate.ec.europa.eu/cas/scripts/screen/screen_en_9.7.1.20.1679559965505.js" integrity="sha256-Bt/KIz2P8ILyeohGr85rPLuC6V7lURI5hYwMKIDc2zw= sha384-Mm+L2nENQ0OpPq7RNoEtQVUpvJPZF+lp01OK3yDSCZBHNQFEMT+buBppzOCO2FVk sha512-OdapdrhB9SEwj64seVqqRD2sJWGAC02OvoKuc8nev/DYqy10gviD21XH+wsZcwKI5yVUpcUa215v7PBkJUJ40g==" charset="UTF-8" defer="true"></script>
+    <script type="text/javascript" src="https://webgate.ec.europa.eu/cas/scripts/contrast/contrast_en_9.7.1.20.1679559965505.js" integrity="sha256-s379ROUOzGyyK1H8neCEIRKo3wQnabmtXqp1Moh0Vo8= sha384-O7XOTZyM/toKPrGBJBI379zpo4nUxnJT3eUq1dgPwDkuzeJ3N8alAprhuAD3UKhT sha512-nsaRCL+FvdZ0S0dy8btbepr17GnX//XjBpJfr/UYDKpwS2tRUaYs4u8vh8RikLSgKudgRt39EeBuKvkWaCoGPA==" charset="UTF-8" defer="true"></script>
+    -->
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/html5shiv/html5shiv-3.7.3.js') }}"
+        charset="UTF-8"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/respond/respond-1.4.2.js') }}"
+        charset="UTF-8"></script>
+    <meta name="referrer" content="no-referrer">
+    <!--
+    <script type="text/javascript" src="https://webgate.ec.europa.eu/cas/scripts/framekiller/framekiller_en_9.7.1.20.1679559965505.js" integrity="sha256-4eAcfcjcYggBc15lar0Ti3diGjQ2qnhfNeAQo2n7f+g= sha384-OOLLE3ikdVyR66gGCHsB/hGYstmmpUtONQOe/U8tP/PRXocqpI43ariFDGzKFcIG sha512-/7sPyYaEFDxkPyGQzkLKHSi/RSXBAbR5BjZLgUtkaRx8Qk4SROLIH96d+7bbkpU61osJDdB9gyjtilpPIFnF6w==" charset="UTF-8"></script>
+    -->
+    <!--
+    <script type="text/javascript" src="https://webgate.ec.europa.eu/cas/scripts/locval/locval_en_9.7.1.20.1679559965505.js" integrity="sha256-fGdBvjTPjOPZBmgDo8xMKgZUwmXXCzYZ+BbHErfhc/Q= sha384-Y9eAdYjT/TZ0VPUxw3Ex/TVSZZzPsV1mRoKD0BTkrQn0L615z24j26O2CZdT1Xl+ sha512-T9HoOOy1OkJ0l1GWqvT2RAR9frKd4zImDm1uyHxjmB/nxNBhmdjEhR9MckiWiNv2/UrFrMZJwSMB4Po/ExbFOw==" charset="UTF-8"></script>
+-->
+
+    <title>Age Verification Wallet</title>
+</head>
+
+<body class="bg-white">
+    <div role="main" class="mx-auto w-full max-w-screen-md p-6 flex flex-col min-h-screen">
+
+        <!-- Header Section -->
+        <div class="space-y-2 mb-8">
+            <p class="text-sm font-semibold uppercase tracking-wider text-gray-500">Test Issuer</p>
+            <h1 class="font-pf text-4xl font-bold text-gray-800">Review & Send</h1>
+            <p class="font-pf text-base text-gray-600">
+                Please review the selected attributes before sending to the Age Verification demo app.
+            </p>
+        </div>
+
+        <!-- The Form -->
+        <form id="authForm" method="post" action="{{redirect_url}}" class="flex-grow flex flex-col">
+
+            <!-- This div grows to push the buttons down -->
+            <div class="flex-grow">
+                <!-- The Inset Data Card -->
+                <div class="bg-gray-200 rounded-xl p-6">
+                    <div class="space-y-5">
+
+                        <!-- Loop through the main categories of data -->
+                        {% for category_name, attributes in presentation_data.items() %}
+                        <!-- Loop through each individual attribute inside the category -->
+                        {% for name, value in attributes.items() %}
+
+                        {% if name == "portrait" %}
+                        <div class="attribute-block">
+                            <label class="block text-base font-bold text-custom-gray">{{ name | title }}</label>
+                            <img class="mt-1 rounded-lg shadow-md w-32 h-32 object-cover"
+                                src="data:image/jpeg;base64,{{ value }}">
+                        </div>
+                        {% else %}
+                        <div class="attribute-block">
+                            <label class="font-pf block font-bold text-custom-gray">{{ name | replace('_', ' ') | title
+                                }}</label>
+                            <p class="font-pf text-base text-custom-gray mt-1">{{ value }}</p>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                        {% endfor %}
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden user_id input, must be inside the form -->
+            <input type="hidden" value="{{ user_id }}" name="user_id">
+
+            <!-- Action Buttons (pushed to the bottom) -->
+            <div class="mt-auto pt-8">
+                <div class="flex flex-col gap-2 items-center">
+                    <button type="submit" name="proceed"
+                        class="w-full bg-blue-900 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-800 transition-colors">
+                        Authorize
+                    </button>
+                    <a href="/auth_choice"
+                        class="w-full text-center text-gray-600 font-semibold py-2 rounded-lg hover:bg-gray-100">
+                        Cancel
+                    </a>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</body>
+
+</html>
