@@ -30,7 +30,7 @@ sequenceDiagram
     Wallet->>Iss: 2. OID4VCI: Credential Request
     
     Note over Iss, IdP: [OIDC Protocol] - Authentication & Verification Flow
-    Iss->>Wallet: 3. OIDC: Redirect to Identity Provider
+    Iss->>Wallet: 3. OIDC: Redirect to Identity Provider (session opens)
     Wallet->>IdP: 4. OIDC: Authentication Request (with Phone Number)
     Note right of User: The User provides explicit consent at this step.
     
@@ -40,7 +40,7 @@ sequenceDiagram
     MNO-->>Aduna: 7. DOB Match Found (18+)
     Aduna-->>IdP: 8. Verification Result: TRUE
     
-    IdP->>Wallet: 9. OIDC: Authentication Success (ID Token)
+    IdP->>Wallet: 9. OIDC: Auth Code (session closes → Wallet exchanges for tokens)
     Wallet->>Iss: 10. OID4VCI: Present ID Token
     
     Note over Iss, Sign: Credential Generation
@@ -70,13 +70,13 @@ sequenceDiagram
 
 1.  **Request Credential:** The user initiates a request for a "Proof of Age" credential in their EUDI Wallet.
 2.  **Credential Request (OID4VCI):** The Wallet sends a request to the Vonage Issuer Service using the OID4VCI protocol.
-3.  **Redirect for Authentication (OIDC):** The Issuer Service, seeing the user is not authenticated, redirects the Wallet to the configured `Vonage Identity Provider` to handle authentication, as per the standard OIDC flow.
+3.  **Redirect for Authentication (OIDC):** The Issuer Service, seeing the user is not authenticated, redirects the Wallet to the configured `Vonage Identity Provider` to handle authentication. **This is where the OIDC session opens.** The session records the full authorization request context — client ID, redirect URI, scope, PKCE challenge, and `nonce` — and holds it open across the phone form interaction and age check that follow (steps 4–8).
 4.  **Authentication & Consent (OIDC):** The Wallet sends an authentication request to the `Vonage Identity Provider`. At this point, the Identity Provider presents a consent screen to the user. The user explicitly authorizes Vonage to perform the age check with their MNO for this specific transaction.
 5.  **Verify Age (CAMARA):** Once the user grants consent, the `Vonage Identity Provider` calls the Aduna Global Hub via a CAMARA API to verify the user's age based on their phone number.
 6.  **Query MNO:** Aduna routes the request to the correct MNO.
 7.  **Get KYC Data:** The MNO checks its KYC records and confirms the user is over the required age threshold.
 8.  **Return Verification Result:** The result is passed back to the `Vonage Identity Provider`.
-9.  **Issue Authorization Code (OIDC):** With the age successfully verified, the issuer creates an **OIDC session** and issues an **authorization code** to the Wallet. The session carries the original authorization request parameters and binds the verified phone number as the user identity (`sub`). The Wallet exchanges the code for an `access_token`, `id_token`, and `refresh_token` at the `/token` endpoint. The session's job ends here — it is scaffolding to get the tokens back to the Wallet securely.
+9.  **Issue Authorization Code (OIDC):** With the age successfully verified, the OIDC session (opened at step 3) is now **completed**. The IdP issues an **authorization code** to the Wallet, binding the verified phone number as the user identity (`sub`). The Wallet exchanges the code for an `access_token`, `id_token`, and `refresh_token` at the `/token` endpoint. **The OIDC session ends here** — it was scaffolding to carry the auth request securely through the verification interaction and get the resulting tokens back to the Wallet.
 10. **Request Credential (OID4VCI):** The Wallet uses the `access_token` to call the `/credential` endpoint on the Issuer Service.
 11. **Request Signature:** The Issuer Service creates the age claim (`over_18: true`) and requests the Signing Engine to sign it.
 12. **Generate Signed Attestation:** The Signing Engine returns a signed `mso_mdoc` credential.
