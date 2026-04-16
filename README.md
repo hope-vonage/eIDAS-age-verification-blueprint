@@ -52,6 +52,8 @@ The age attestation will be issued in the **`mso_mdoc` (Mobile Security Object f
 
 ### 4.4. Proof Presentation (OID4VP / DC API)
 
+> **Scope note:** This section describes the *presentation* layer — how a user later proves their age to a third-party verifier (e.g. a cinema). This is a **separate component** from the issuer service we are building. Vonage's current implementation covers the issuance flow only (sections 4.1–4.3). The presentation layer would be implemented in a later phase.
+
 When a user wants to access an age-restricted service, they present their `mso_mdoc` attestation to a verifier. The official AV ecosystem supports two presentation mechanisms:
 
 1.  **Digital Credentials API (DC API)** — the preferred mechanism. A browser-integrated API (being standardised by W3C) that enables direct, privacy-preserving credential exchange between the verifier web page and the user's wallet on the same or nearby device. See: [w3.org/TR/digital-credentials](https://www.w3.org/TR/digital-credentials).
