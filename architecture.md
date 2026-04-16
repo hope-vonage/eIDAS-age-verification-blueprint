@@ -25,16 +25,16 @@ sequenceDiagram
     participant MNO as Mobile Operator
     participant Ver as Verifier (e.g., Cinema)
 
-    Note over User, Iss: [OID4VCI Protocol] - Credential Issuance Flow
+    Note over User, Iss: [OID4VCI Protocol] - Credential Issuance Flow (steps 1–2, 10–13)
     User->>Wallet: 1. Request "Proof of Age"
     Wallet->>Iss: 2. OID4VCI: Credential Request
     
-    Note over Iss, IdP: [OIDC Protocol] - Authentication & Verification Flow
+    Note over Iss, IdP: [OIDC Protocol] - Authorization Code Flow (steps 3–9)
     Iss->>Wallet: 3. OIDC: Redirect to Identity Provider (session opens)
     Wallet->>IdP: 4. OIDC: Authentication Request (with Phone Number)
     Note right of User: The User provides explicit consent at this step.
     
-    Note over IdP, MNO: [CAMARA API] - MNO Age Verification
+    Note over IdP, MNO: [CAMARA API] - MNO Age Verification (steps 5–8)
     IdP->>Aduna: 5. CAMARA: Verify Age
     Aduna->>MNO: 6. Query KYC Date of Birth
     MNO-->>Aduna: 7. DOB Match Found (18+)
@@ -49,7 +49,7 @@ sequenceDiagram
     
     Iss->>Wallet: 13. OID4VCI: Issue Credential
     
-    Note over Wallet, Ver: [OID4VP Protocol] - Proof Presentation Flow
+    Note over Wallet, Ver: [OID4VP / DC API] - Proof Presentation Flow (steps 14–15)
     Wallet->>Ver: 14. Present mso_mdoc (age_over_18: true)
     Ver->>Ver: 15. Verify Vonage's Signature
 ```
