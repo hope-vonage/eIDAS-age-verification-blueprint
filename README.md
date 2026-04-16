@@ -50,11 +50,16 @@ The core of this architecture is the separation of authentication from issuance.
 
 The age attestation will be issued in the **`mso_mdoc` (Mobile Security Object for Mobile Documents)** format, as specified by ISO/IEC 18013-5. The attestation will contain a single claim, such as `over_18: true`.
 
-### 4.4. Proof Presentation (OID4VP)
+### 4.4. Proof Presentation (OID4VP / DC API)
 
-For presenting the proof of age, the user's app uses the **selective disclosure** capability of the `mso_mdoc` format. The holder chooses which data elements from the signed document to reveal — for example, only `over_18: true` — without exposing any other fields (such as date of birth). The issuer's signature over the disclosed elements is included so the verifier can validate authenticity. This presentation follows the **OpenID for Verifiable Presentations (OID4VP)** protocol.
+When a user wants to access an age-restricted service, they present their `mso_mdoc` attestation to a verifier. The official AV ecosystem supports two presentation mechanisms:
 
-> **Note:** This is *not* a Zero-Knowledge Proof (ZKP). True ZKPs (e.g. BBS+ signatures) would require a different credential format and cryptographic stack. `mso_mdoc` selective disclosure achieves data minimisation, but the verifier does see the disclosed claim value and the issuer signature.
+1.  **Digital Credentials API (DC API)** — the preferred mechanism. A browser-integrated API (being standardised by W3C) that enables direct, privacy-preserving credential exchange between the verifier web page and the user's wallet on the same or nearby device. See: [w3.org/TR/digital-credentials](https://www.w3.org/TR/digital-credentials).
+2.  **OpenID for Verifiable Presentations (OID4VP)** — the fallback mechanism for browsers that do not yet support the DC API. The user scans a QR code with the Age Verification App, approves the request with PIN/biometric, and the attestation is transmitted to the verifier.
+
+In both cases, the `mso_mdoc` **selective disclosure** mechanism is used: the holder reveals only the required data elements (e.g. `over_18: true`) without exposing other fields such as date of birth. The verifier validates the issuer signature and checks the issuer against the **AV Trusted List**.
+
+> **ZKP note:** Zero-Knowledge Proofs are documented as a future roadmap item in [Annex B of the AV Technical Specification](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-B/annex-B-zkp/). They are not part of the current implementation. True ZKPs (e.g. BBS+ signatures) would require a different credential format and cryptographic stack to the current `mso_mdoc` selective disclosure approach.
 
 ## 5. Security Considerations
 
