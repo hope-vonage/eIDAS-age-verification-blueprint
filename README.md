@@ -52,12 +52,14 @@ The age attestation will be issued in the **`mso_mdoc` (Mobile Security Object f
 
 ### 4.4. Proof Presentation (OID4VP)
 
-For presenting the proof of age, the user's app will generate a **Zero-Knowledge Proof (ZKP)**. This allows the user to prove the validity of the `over_18` claim to a verifier without revealing any other personal information. This presentation will follow the **OpenID for Verifiable Presentations (OID4VP)** protocol.
+For presenting the proof of age, the user's app uses the **selective disclosure** capability of the `mso_mdoc` format. The holder chooses which data elements from the signed document to reveal — for example, only `over_18: true` — without exposing any other fields (such as date of birth). The issuer's signature over the disclosed elements is included so the verifier can validate authenticity. This presentation follows the **OpenID for Verifiable Presentations (OID4VP)** protocol.
+
+> **Note:** This is *not* a Zero-Knowledge Proof (ZKP). True ZKPs (e.g. BBS+ signatures) would require a different credential format and cryptographic stack. `mso_mdoc` selective disclosure achieves data minimisation, but the verifier does see the disclosed claim value and the issuer signature.
 
 ## 5. Security Considerations
 
 *   **Signature Verification:** Verifiers MUST validate the digital signature of the attestation. The public key of the Vonage Signing Engine (QTSP) must be available to verifiers through a trusted registry (e.g., the eIDAS Trusted List).
-*   **Data Minimization:** The use of ZKPs ensures that only the necessary information (i.e., the truth of the age claim) is shared with the verifier.
+*   **Data Minimization:** The `mso_mdoc` selective disclosure mechanism ensures that only the required claim (e.g. `over_18: true`) is shared with the verifier, without revealing the underlying date of birth or any other personal data.
 *   **Secure Communication:** All communication between components must be secured using TLS.
 
 ## 6. Quickstart
